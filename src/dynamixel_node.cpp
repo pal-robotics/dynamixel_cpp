@@ -5,14 +5,15 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "dynamixel_node");
   ros::NodeHandle nh;
+  ros::Rate rate(10);
 
   DynamixelDevice dxl;
 
-  double act = 0.0;
-  double ref = 0.0;
+  double act[] = {0.0,0.0};
+  double ref[] = {0.0,0.0};
 
-  dxl.registerMotor(2, &ref, &act);
-  dxl.registerMotor(3, &ref, &act);
+  dxl.registerMotor(1, &ref[0], &act[0]);
+  dxl.registerMotor(3, &ref[1], &act[1]);
   ROS_INFO("Registered motors");
 
   dxl.init();
@@ -20,9 +21,14 @@ int main(int argc, char** argv)
 
   while(ros::ok())
   {
-      ROS_INFO_STREAM_THROTTLE(0.3, "Act: " << act << " , ref:" << ref);
-      dxl.update();
-      ros::spinOnce();
+    for(int i=0; i<2; ++i)
+    {
+      ROS_INFO_STREAM("Act: " << act[i] <<
+                      " , ref:" << ref[i]);
+    }
+    dxl.update();
+    rate.sleep();
+    ros::spinOnce();
   }
 
   return 0;

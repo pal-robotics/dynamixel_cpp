@@ -15,11 +15,15 @@ public:
 
   void update();
 
+  void enableTorque(bool enable);
+
 private:
   std::vector<int> motor_ids;
   std::vector<double*> refs;
   std::vector<double*> acts;
 
   int comm_status;
+
+  bool torque_enabled;
 };
 #endif
