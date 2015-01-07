@@ -1,16 +1,29 @@
-#include <dynamixel_cpp/dynamixel_device.h>
 #include <ros/ros.h>
+#include <dynamixel_cpp/dynamixel_device.h>
+#include <dynamic_reconfigure/server.h>
+#include <dynamixel_cpp/DynControlConfig.h>
+
+double ref[] = {0.0,0.0};
+
+void callback(dynamixel_cpp::DynControlConfig &config, uint32_t level) {
+  ref[0] = config.motor_1;
+  ref[1] = config.motor_2;
+}
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "dynamixel_node");
   ros::NodeHandle nh;
   ros::Rate rate(10);
+  dynamic_reconfigure::Server<dynamixel_cpp::DynControlConfig> server;
+  dynamic_reconfigure::Server<dynamixel_cpp::DynControlConfig>::CallbackType f;
+
+  f = boost::bind(&callback, _1, _2);
+  server.setCallback(f);
 
   DynamixelDevice dxl;
 
   double act[] = {0.0,0.0};
-  double ref[] = {0.0,0.0};
 
   dxl.registerMotor(1, &ref[0], &act[0]);
   dxl.registerMotor(3, &ref[1], &act[1]);

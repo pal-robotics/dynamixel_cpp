@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 2.8.3)
 project(dynamixel_cpp)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  dynamic_reconfigure
 )
 
-# find_package(Boost REQUIRED COMPONENTS system)
+generate_dynamic_reconfigure_options(
+  cfg/DynControl.cfg
+  )
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -34,6 +37,7 @@ target_link_libraries(dynamixel_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )
+add_dependencies(dynamixel_node ${PROJECT_NAME}_gencfg)
 
 #############
 ## Install ##
