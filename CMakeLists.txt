@@ -7,10 +7,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 generate_dynamic_reconfigure_options(
   cfg/DynControl.cfg
-  )
+)
 
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
   LIBRARIES dynamixel_cpp
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
