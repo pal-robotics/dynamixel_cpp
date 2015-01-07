@@ -9,7 +9,7 @@ public:
   DynamixelDevice();
   virtual ~DynamixelDevice();
 
-  void init();
+  bool init();
 
   void registerMotor(int motor_id, double* ref, double* act);
 

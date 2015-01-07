@@ -32,14 +32,16 @@ DynamixelDevice::~DynamixelDevice()
   dxl_terminate();
 }
 
-void DynamixelDevice::init()
+bool DynamixelDevice::init()
 {
   ///////// Open USB2Dynamixel ////////////
   //    if(dxl_initialize(deviceIndex, baudnum) == 0)
   if(dxl_initialize(0, 1) == 0)
   {
     ROS_FATAL("Failed to open USB2Dynamixel!\n");
+    return false;
   }
+  return true;
 }
 
 void DynamixelDevice::registerMotor(int motor_id, double* ref, double* act)
