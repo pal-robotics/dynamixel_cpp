@@ -73,6 +73,14 @@ void DynamixelDevice::update()
   }
 }
 
+void DynamixelDevice::updateLoop()
+{
+  while(true)
+  {
+    update();
+  }
+}
+
 void DynamixelDevice::enableTorque(bool enable)
 {
   if(torque_enabled != enable)
