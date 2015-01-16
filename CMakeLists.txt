@@ -39,7 +39,7 @@ add_dependencies(dynamixel_node ${PROJECT_NAME}_gencfg)
 ## Install ##
 #############
 
-install(TARGETS dynamixel_cpp
+install(TARGETS dynamixel_cpp dynamixel_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
