@@ -2,12 +2,19 @@
 #include <dynamixel_cpp/dynamixel_device.h>
 #include <dynamic_reconfigure/server.h>
 #include <dynamixel_cpp/DynControlConfig.h>
+#include <sensor_msgs/JointState.h>
 
 double ref[] = {0.0,0.0};
 
-void callback(dynamixel_cpp::DynControlConfig &config, uint32_t level) {
+void reconfCallback(dynamixel_cpp::DynControlConfig &config, uint32_t level) {
   ref[0] = config.motor_1;
   ref[1] = config.motor_2;
+}
+
+void refCallback(const sensor_msgs::JointStateConstPtr& ref_state)
+{
+  ref[0] = ref_state->position[0];
+  ref[1] = ref_state->position[1];
 }
 
 int main(int argc, char** argv)
@@ -18,7 +25,14 @@ int main(int argc, char** argv)
   dynamic_reconfigure::Server<dynamixel_cpp::DynControlConfig> server;
   dynamic_reconfigure::Server<dynamixel_cpp::DynControlConfig>::CallbackType f;
 
-  f = boost::bind(&callback, _1, _2);
+  ros::Subscriber state_sub = nh.subscribe("dynamixel_ref", 100, &refCallback);
+  ros::Publisher state_pub = nh.advertise<sensor_msgs::JointState>("dynamixel_act", 10);
+  sensor_msgs::JointState act_state;
+  act_state.position.resize(2);
+  act_state.velocity.resize(2);
+  act_state.effort.resize(2);
+
+  f = boost::bind(&reconfCallback, _1, _2);
   server.setCallback(f);
 
   DynamixelDevice dxl;
@@ -40,8 +54,11 @@ int main(int argc, char** argv)
                       " , ref:" << ref[i]);
     }
     dxl.update();
-    rate.sleep();
+    act_state.position[0] = act[0];
+    act_state.position[1] = act[1];
+    state_pub.publish(act_state);
     ros::spinOnce();
+    rate.sleep();
   }
 
   return 0;
