@@ -14,7 +14,6 @@ public:
   void registerMotor(int motor_id, double* ref, double* act);
 
   void update();
-  void updateLoop();
 
   void enableTorque(bool enable);
 

@@ -53,32 +53,24 @@ void DynamixelDevice::registerMotor(int motor_id, double* ref, double* act)
 
 void DynamixelDevice::update()
 {
-  for(size_t i=0; i<motor_ids.size(); ++i)
-  {
-    // Read present position
-    *(acts[i]) = (dxl_read_word(motor_ids[i], P_PRESENT_POSITION_L) - 512) * enc_to_rad;
-
-    // Write goal position
-    dxl_write_word(motor_ids[i], P_GOAL_POSITION_L, int((*(refs[i])*rad_to_enc)+512));
-
-    comm_status = dxl_get_result();
-    if(comm_status != COMM_RXSUCCESS)
+    for(size_t i=0; i<motor_ids.size(); ++i)
     {
-      ROS_ERROR_STREAM_THROTTLE(1.0,
-                                "DynamixelDevice comm error, motor ID: "
-                                << motor_ids[i]);
-      printCommStatus(comm_status);
-      break;
-    }
-  }
-}
+      // Read present position
+      *(acts[i]) = (dxl_read_word(motor_ids[i], P_PRESENT_POSITION_L) - 512) * enc_to_rad;
 
-void DynamixelDevice::updateLoop()
-{
-  while(true)
-  {
-    update();
-  }
+      // Write goal position
+      dxl_write_word(motor_ids[i], P_GOAL_POSITION_L, int((*(refs[i]))*rad_to_enc)+512);
+
+      comm_status = dxl_get_result();
+      if(comm_status != COMM_RXSUCCESS)
+      {
+        ROS_ERROR_STREAM_THROTTLE(1.0,
+                                  "DynamixelDevice comm error, motor ID: "
+                                  << motor_ids[i]);
+        printCommStatus(comm_status);
+        break;
+      }
+    }
 }
 
 void DynamixelDevice::enableTorque(bool enable)
@@ -98,31 +90,31 @@ void printCommStatus(int CommStatus)
   switch(CommStatus)
   {
   case COMM_TXFAIL:
-    printf("COMM_TXFAIL: Failed transmit instruction packet!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_TXFAIL: Failed transmit instruction packet!");
     break;
 
   case COMM_TXERROR:
-    printf("COMM_TXERROR: Incorrect instruction packet!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_TXERROR: Incorrect instruction packet!");
     break;
 
   case COMM_RXFAIL:
-    printf("COMM_RXFAIL: Failed get status packet from device!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXFAIL: Failed get status packet from device!");
     break;
 
   case COMM_RXWAITING:
-    printf("COMM_RXWAITING: Now recieving status packet!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXWAITING: Now recieving status packet!");
     break;
 
   case COMM_RXTIMEOUT:
-    printf("COMM_RXTIMEOUT: There is no status packet!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXTIMEOUT: There is no status packet!");
     break;
 
   case COMM_RXCORRUPT:
-    printf("COMM_RXCORRUPT: Incorrect status packet!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXCORRUPT: Incorrect status packet!");
     break;
 
   default:
-    printf("This is unknown error code %d \n", CommStatus);
+    ROS_ERROR_STREAM_THROTTLE(1.0,"This is unknown error code " << CommStatus);
     break;
   }
 }
@@ -131,23 +123,23 @@ void printCommStatus(int CommStatus)
 void PrintErrorCode()
 {
   if(dxl_get_rxpacket_error(ERRBIT_VOLTAGE) == 1)
-    printf("Input voltage error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Input voltage error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_ANGLE) == 1)
-    printf("Angle limit error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Angle limit error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_OVERHEAT) == 1)
-    printf("Overheat error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Overheat error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_RANGE) == 1)
-    printf("Out of range error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Out of range error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_CHECKSUM) == 1)
-    printf("Checksum error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Checksum error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_OVERLOAD) == 1)
-    printf("Overload error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Overload error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_INSTRUCTION) == 1)
-    printf("Instruction code error!\n");
+    ROS_ERROR_STREAM_THROTTLE(1.0,"Instruction code error!");
 }
