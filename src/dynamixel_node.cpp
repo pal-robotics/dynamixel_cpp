@@ -21,12 +21,12 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "dynamixel_node");
   ros::NodeHandle nh;
-  ros::Rate rate(10);
+  ros::Rate rate(20);
   dynamic_reconfigure::Server<dynamixel_cpp::DynControlConfig> server;
   dynamic_reconfigure::Server<dynamixel_cpp::DynControlConfig>::CallbackType f;
 
-  ros::Subscriber state_sub = nh.subscribe("dynamixel_ref", 100, &refCallback);
-  ros::Publisher state_pub = nh.advertise<sensor_msgs::JointState>("dynamixel_act", 10);
+  ros::Subscriber state_sub = nh.subscribe("dynamixel_ref", 50, &refCallback);
+  ros::Publisher state_pub = nh.advertise<sensor_msgs::JointState>("dynamixel_act", 50);
   sensor_msgs::JointState act_state;
   act_state.position.resize(2);
   act_state.velocity.resize(2);
@@ -48,14 +48,15 @@ int main(int argc, char** argv)
 
   while(ros::ok())
   {
-    for(int i=0; i<2; ++i)
-    {
-      ROS_INFO_STREAM("Act: " << act[i] <<
-                      " , ref:" << ref[i]);
-    }
+//    for(int i=0; i<2; ++i)
+//    {
+//      ROS_INFO_STREAM("Act: " << act[i] <<
+//                      " , ref:" << ref[i]);
+//    }
     dxl.update();
     act_state.position[0] = act[0];
     act_state.position[1] = act[1];
+    act_state.header.stamp = ros::Time::now();
     state_pub.publish(act_state);
     ros::spinOnce();
     rate.sleep();
