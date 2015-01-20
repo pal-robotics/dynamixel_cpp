@@ -3,6 +3,7 @@ project(dynamixel_cpp)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   dynamic_reconfigure
+  sensor_msgs
 )
 
 generate_dynamic_reconfigure_options(
