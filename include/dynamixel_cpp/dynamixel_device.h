@@ -2,6 +2,7 @@
 #define __DYNAMIXEL_CPP_DYNAMIXEL__DEVICE__
 
 #include <vector>
+#include <boost/circular_buffer.hpp>
 
 class DynamixelDevice
 {
@@ -9,7 +10,7 @@ public:
   DynamixelDevice();
   virtual ~DynamixelDevice();
 
-  bool init();
+  bool init(int feedback_filter_size=5);
 
   void registerMotor(int motor_id, double* ref, double* act);
 
@@ -22,8 +23,12 @@ private:
   std::vector<double*> refs;
   std::vector<double*> acts;
 
+  double act_buff;
+
   int comm_status;
 
   bool torque_enabled;
+
+  boost::circular_buffer<double> feedback_buff;
 };
 #endif

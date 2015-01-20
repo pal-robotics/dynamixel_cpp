@@ -32,7 +32,7 @@ DynamixelDevice::~DynamixelDevice()
   dxl_terminate();
 }
 
-bool DynamixelDevice::init()
+bool DynamixelDevice::init(int feedback_filter_size)
 {
   ///////// Open USB2Dynamixel ////////////
   //    if(dxl_initialize(deviceIndex, baudnum) == 0)
@@ -41,6 +41,8 @@ bool DynamixelDevice::init()
     ROS_FATAL("Failed to open USB2Dynamixel!\n");
     return false;
   }
+
+  feedback_buff.set_capacity(feedback_filter_size);
   return true;
 }
 
@@ -56,13 +58,34 @@ void DynamixelDevice::update()
     for(size_t i=0; i<motor_ids.size(); ++i)
     {
       // Read present position
-      *(acts[i]) = (dxl_read_word(motor_ids[i], P_PRESENT_POSITION_L) - 512) * enc_to_rad;
+      act_buff = (dxl_read_word(motor_ids[i], P_PRESENT_POSITION_L) - 512) * enc_to_rad;
 
       // Write goal position
       dxl_write_word(motor_ids[i], P_GOAL_POSITION_L, int((*(refs[i]))*rad_to_enc)+512);
 
       comm_status = dxl_get_result();
-      if(comm_status != COMM_RXSUCCESS)
+      if(comm_status == COMM_RXSUCCESS)
+      {
+//        if(act_buff == 0 && fabs(*(acts[i])) > 0.01)
+//        {
+//           ROS_ERROR("ZERO WTF");
+//           break;
+//        }
+        // result is median of last N elements (if have enough elements)
+        if(feedback_buff.size() == feedback_buff.capacity())
+        {
+          feedback_buff.push_back(act_buff);
+          std::nth_element(feedback_buff.begin(),
+                           feedback_buff.begin() + feedback_buff.size()/2,
+                           feedback_buff.end());
+          *(acts[i]) = feedback_buff[feedback_buff.size() / 2];
+        }
+        else
+        {
+          *(acts[i]) = act_buff;
+        }
+      }
+      else
       {
         ROS_ERROR_STREAM_THROTTLE(1.0,
                                   "DynamixelDevice comm error, motor ID: "
