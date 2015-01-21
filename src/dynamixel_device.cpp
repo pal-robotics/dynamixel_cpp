@@ -9,6 +9,8 @@
 #define P_PRESENT_POSITION_H	37
 #define P_MOVING		46
 #define P_TORQUE_ENABLE		24
+#define DXL_CW_COMPLIANCE_SLOPE 28
+#define DXL_CCW_COMPLIANCE_SLOPE 29
 
 // User setting
 #define BAUD_NUM                1      // 1: 1Mbps 34:57142bps
@@ -23,6 +25,7 @@ void printCommStatus(int CommStatus);
 
 DynamixelDevice::DynamixelDevice()
   : torque_enabled(true)
+  , initialized(false)
 {
 }
 
@@ -42,12 +45,32 @@ bool DynamixelDevice::init(int feedback_filter_size)
     return false;
   }
 
-  feedback_buff.set_capacity(feedback_filter_size);
+  feedback_buff.clear();
+  feedback_buff.resize(motor_ids.size());
+  for(size_t i=0; i<motor_ids.size(); ++i)
+  {
+    feedback_buff[i].set_capacity(feedback_filter_size);
+    dxl_write_word(motor_ids[i], DXL_CW_COMPLIANCE_SLOPE, 7);
+    dxl_write_word(motor_ids[i], DXL_CCW_COMPLIANCE_SLOPE, 7);
+    comm_status = dxl_get_result();
+    if(comm_status == COMM_RXSUCCESS)
+    {
+      ROS_ERROR("Failed to set motor compliance slopes!");
+    }
+  }
+
+  initialized = true;
   return true;
 }
 
 void DynamixelDevice::registerMotor(int motor_id, double* ref, double* act)
 {
+  if(initialized)
+  {
+    ROS_ERROR("Cannot register once the device has been initialized!");
+    return;
+  }
+
   motor_ids.push_back(motor_id);
   refs.push_back(ref);
   acts.push_back(act);
@@ -55,6 +78,12 @@ void DynamixelDevice::registerMotor(int motor_id, double* ref, double* act)
 
 void DynamixelDevice::update()
 {
+    if(!initialized)
+    {
+      ROS_ERROR("Update cannot run before initialization!");
+      return;
+    }
+
     for(size_t i=0; i<motor_ids.size(); ++i)
     {
       // Read present position
@@ -72,13 +101,13 @@ void DynamixelDevice::update()
 //           break;
 //        }
         // result is median of last N elements (if have enough elements)
-        if(feedback_buff.size() == feedback_buff.capacity())
+        if(feedback_buff[i].size() == feedback_buff[i].capacity())
         {
-          feedback_buff.push_back(act_buff);
-          std::nth_element(feedback_buff.begin(),
-                           feedback_buff.begin() + feedback_buff.size()/2,
-                           feedback_buff.end());
-          *(acts[i]) = feedback_buff[feedback_buff.size() / 2];
+          feedback_buff[i].push_back(act_buff);
+          std::nth_element(feedback_buff[i].begin(),
+                           feedback_buff[i].begin() + feedback_buff[i].size()/2,
+                           feedback_buff[i].end());
+          *(acts[i]) = feedback_buff[i][feedback_buff[i].size() / 2];
         }
         else
         {

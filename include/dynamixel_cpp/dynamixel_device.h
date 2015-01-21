@@ -19,6 +19,8 @@ public:
   void enableTorque(bool enable);
 
 private:
+  bool initialized;
+
   std::vector<int> motor_ids;
   std::vector<double*> refs;
   std::vector<double*> acts;
@@ -29,6 +31,6 @@ private:
 
   bool torque_enabled;
 
-  boost::circular_buffer<double> feedback_buff;
+  std::vector<boost::circular_buffer<double> > feedback_buff;
 };
 #endif
