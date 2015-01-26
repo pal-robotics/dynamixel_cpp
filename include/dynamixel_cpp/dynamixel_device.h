@@ -18,6 +18,9 @@ public:
 
   void enableTorque(bool enable);
 
+  void setComplianceSlope(int motor_id, int value);
+  int getComplianceSlope(int motor_id);
+
 private:
   bool initialized;
 

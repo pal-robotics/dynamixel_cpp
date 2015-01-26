@@ -1,6 +1,7 @@
 #include <dynamixel_cpp/dynamixel_device.h>
 #include <dynamixel_cpp/dynamixel.h>
 #include <ros/console.h>
+#include <algorithm>
 
 // Control table address
 #define P_GOAL_POSITION_L	30
@@ -48,16 +49,7 @@ bool DynamixelDevice::init(int feedback_filter_size)
   feedback_buff.clear();
   feedback_buff.resize(motor_ids.size());
   for(size_t i=0; i<motor_ids.size(); ++i)
-  {
     feedback_buff[i].set_capacity(feedback_filter_size);
-    dxl_write_word(motor_ids[i], DXL_CW_COMPLIANCE_SLOPE, 7);
-    dxl_write_word(motor_ids[i], DXL_CCW_COMPLIANCE_SLOPE, 7);
-    comm_status = dxl_get_result();
-    if(comm_status == COMM_RXSUCCESS)
-    {
-      ROS_ERROR("Failed to set motor compliance slopes!");
-    }
-  }
 
   initialized = true;
   return true;
@@ -135,6 +127,41 @@ void DynamixelDevice::enableTorque(bool enable)
     }
     torque_enabled = enable;
   }
+}
+
+void DynamixelDevice::setComplianceSlope(int motor_id, int value)
+{
+  if(std::find(motor_ids.begin(), motor_ids.end(), motor_id) == motor_ids.end())
+  {
+    ROS_ERROR_STREAM("Will not set compliance slope for motor with id "
+                     << motor_id <<  " since it is not registered");
+    return;
+  }
+
+  dxl_write_byte(motor_id, DXL_CW_COMPLIANCE_SLOPE, value);
+  dxl_write_byte(motor_id, DXL_CCW_COMPLIANCE_SLOPE, value);
+  comm_status = dxl_get_result();
+  if(comm_status == COMM_RXSUCCESS)
+  {
+    ROS_ERROR("Failed to set motor compliance slopes!");
+  }
+}
+
+int DynamixelDevice::getComplianceSlope(int motor_id)
+{
+  if(std::find(motor_ids.begin(), motor_ids.end(), motor_id) == motor_ids.end())
+  {
+    ROS_ERROR_STREAM("Cannot get compliance slope for motor with id "
+                     << motor_id <<  " since it is not registered");
+    return -1;
+  }
+
+  int slope = dxl_read_byte(motor_id, DXL_CW_COMPLIANCE_SLOPE);
+  //ROS_ERROR_STREAM_THROTTLE(1.0, "CW slope on motor " << motor_id << ": " << slope);
+  int slope2 = dxl_read_byte(motor_id, DXL_CCW_COMPLIANCE_SLOPE);
+  //ROS_ERROR_STREAM_THROTTLE(1.0, "CCW slope on motor " << motor_id << ": " << slope);
+
+  return (slope+slope2)/2;
 }
 
 void printCommStatus(int CommStatus)
