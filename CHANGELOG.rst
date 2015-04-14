@@ -2,8 +2,8 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2015-04-14)
+------------------
 * Add compliance slope (smoothness) to device lib and node
 * Init sets slope, added init guards to other functions
 * Contributors: Bence Magyar
