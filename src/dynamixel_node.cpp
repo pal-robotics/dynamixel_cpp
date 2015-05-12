@@ -5,7 +5,7 @@
 #include <sensor_msgs/JointState.h>
 
 double ref[] = {0.0,0.0};
-int compliance_slope[] = {90, 90};
+int compliance_slope[] = {50, 50};
 DynamixelDevice dxl;
 
 void reconfCallback(dynamixel_cpp::DynControlConfig &config, uint32_t level) {
