@@ -2,12 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(dynamixel_cpp)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  dynamic_reconfigure
   sensor_msgs
-)
-
-generate_dynamic_reconfigure_options(
-  cfg/DynControl.cfg
 )
 
 catkin_package(
@@ -34,7 +29,6 @@ target_link_libraries(dynamixel_node
   ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )
-add_dependencies(dynamixel_node ${PROJECT_NAME}_gencfg)
 
 #############
 ## Install ##

@@ -8,11 +8,6 @@ double ref[] = {0.0,0.0};
 int compliance_slope[] = {50, 50};
 DynamixelDevice dxl;
 
-void reconfCallback(dynamixel_cpp::DynControlConfig &config, uint32_t level) {
-  ref[0] = config.motor_1;
-  ref[1] = config.motor_2;
-}
-
 void refCallback(const sensor_msgs::JointStateConstPtr& ref_state)
 {
   ref[0] = ref_state->position[0];
@@ -44,10 +39,6 @@ int main(int argc, char** argv)
   act_state.position.resize(2);
   act_state.velocity.resize(2);
   act_state.effort.resize(2);
-
-  f = boost::bind(&reconfCallback, _1, _2);
-  server.setCallback(f);
-
 
   double act[] = {0.0,0.0};
 
