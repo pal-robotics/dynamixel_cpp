@@ -76,7 +76,10 @@ int main(int argc, char** argv)
   act_state.effort.resize(motors.size());
 
   for(size_t i=0; i<motors.size(); ++i)
+  {
+    act_state.name.push_back(motors[i].name_);
     dxl.registerMotor(motors[i].id_, &motors[i].ref, &motors[i].act);
+  }
   ROS_INFO("Registered motors");
 
   dxl.init();
