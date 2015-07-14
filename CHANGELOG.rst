@@ -2,6 +2,14 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Feedback has joint names
+* Node is now configurable using a yaml file
+* Remove dynamic_reconfigure
+* Lower compliance slope by 1 level, faster response but a bit more responsive to errors
+* Contributors: Bence Magyar
+
 0.0.2 (2015-04-14)
 ------------------
 * Add compliance slope (smoothness) to device lib and node
