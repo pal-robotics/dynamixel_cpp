@@ -2,8 +2,8 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.3 (2015-07-14)
+------------------
 * Feedback has joint names
 * Node is now configurable using a yaml file
 * Remove dynamic_reconfigure
