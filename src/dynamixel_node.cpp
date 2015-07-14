@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <dynamixel_cpp/dynamixel_device.h>
-#include <dynamic_reconfigure/server.h>
 #include <dynamixel_cpp/DynControlConfig.h>
 #include <sensor_msgs/JointState.h>
 
