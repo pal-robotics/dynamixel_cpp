@@ -2,8 +2,8 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.4 (2015-07-14)
+------------------
 * Remove unused dynamic reconfigure header and artifacts
 * Contributors: Adolfo Rodriguez Tsouroukdissian
 
