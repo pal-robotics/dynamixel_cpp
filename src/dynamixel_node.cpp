@@ -41,20 +41,29 @@ void refCallback(const sensor_msgs::JointStateConstPtr& ref_state)
 void timerComplianceCallback(const ros::TimerEvent&)
 {
   // Perform a check on the compliance with a configured rate and fix if needed
-  for(size_t i=0; i<motors.size(); ++i)
-    if(dxl.getComplianceSlope(motors[i].id_) != motors[i].compliance_slope_)
-      dxl.setComplianceSlope(motors[i].id_, motors[i].compliance_slope_);
+  for(size_t i=0; i<motors.size(); ++i){
+    int curr_cs = dxl.getComplianceSlope(motors[i].id_);
+    if(curr_cs != motors[i].compliance_slope_)
+    {
+      // It's a bad read, not that it's wrong set usually :/
+      ROS_WARN_STREAM("Compliance slope for motor ID" << motors[i].id_ << " should be " << motors[i].compliance_slope_ << " but is " << curr_cs);
+      //dxl.setComplianceSlope(motors[i].id_, motors[i].compliance_slope_);
+    }
+  }
 }
 
 void timerTorqueCallback(const ros::TimerEvent&)
 {
   // Perform a check on the compliance with a configured rate and fix if needed
-  for(size_t i=0; i<motors.size(); ++i)
-    if(dxl.getTorqueLimit(motors[i].id_) != motors[i].torque_limit_)
+  for(size_t i=0; i<motors.size(); ++i){
+    double curr_tl = dxl.getTorqueLimit(motors[i].id_);
+    if(std::abs(curr_tl - motors[i].torque_limit_) > 0.005)
     {
-      ROS_WARN_STREAM("Torque limit for motor ID" << motors[i].id_ << " should be " << motors[i].torque_limit_ << " but is " << dxl.getTorqueLimit(motors[i].id_));
-      dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_);
+      // It's a bad read, not that it's wrong set usually :/
+      ROS_WARN_STREAM("Torque limit for motor ID" << motors[i].id_ << " should be " << motors[i].torque_limit_ << " but is " << curr_tl);
+      //dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_);
     }
+  }
 }
 
 int main(int argc, char** argv)
@@ -108,14 +117,22 @@ int main(int argc, char** argv)
 
   for(size_t i=0; i<motors.size(); ++i)
   {
-    dxl.setComplianceSlope(motors[i].id_, motors[i].compliance_slope_);
+    while(! dxl.setComplianceSlope(motors[i].id_, motors[i].compliance_slope_))
+    {
+      ROS_ERROR_STREAM("Retrying setting compliance slope to motor id: " << motors[i].id_ << " to " << motors[i].compliance_slope_);
+    }
   }
   for(size_t i=0; i<motors.size(); ++i)
   {
-    dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_);
+    while(! dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_))
+    {
+     ROS_ERROR_STREAM("Retrying setting torque limit to motor id: " << motors[i].id_ << " to " << motors[i].torque_limit_);
+    }
   }
-  ros::Timer compliance_checker = nh.createTimer(ros::Duration(3.0), &timerComplianceCallback);
-  ros::Timer torque_checker = nh.createTimer(ros::Duration(3.0), &timerTorqueCallback);
+
+  // This should not be needed, Bence said it was necessary on Marco... to be tested.
+  // ros::Timer compliance_checker = nh.createTimer(ros::Duration(3.0), &timerComplianceCallback);
+  // ros::Timer torque_checker = nh.createTimer(ros::Duration(3.0), &timerTorqueCallback);
 
   while(ros::ok())
   {

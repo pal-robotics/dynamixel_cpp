@@ -74,51 +74,41 @@ void DynamixelDevice::registerMotor(int motor_id, double* ref, double* act)
 
 void DynamixelDevice::update()
 {
-    if(!initialized)
+  if(!initialized)
+  {
+    ROS_ERROR("Update cannot run before initialization!");
+    return;
+  }
+
+  for(size_t i=0; i<motor_ids.size(); ++i)
+  {
+    // Read present position
+    act_buff = (dxl_read_word(motor_ids[i], P_PRESENT_POSITION_L) - 512) * enc_to_rad;
+    comm_status = dxl_get_result();
+    // If the reading went wrong dont update actuator position, next iteration we may be luckier
+    if(comm_status == COMM_RXSUCCESS)
     {
-      ROS_ERROR("Update cannot run before initialization!");
-      return;
+      *(acts[i]) = act_buff;
+    }
+    else
+    {
+      ROS_WARN_STREAM("DynamixelDevice comm error on update of control loop (reading position), motor ID: "
+                       << motor_ids[i]);
     }
 
-    for(size_t i=0; i<motor_ids.size(); ++i)
+    // Write goal position
+    dxl_write_word(motor_ids[i], P_GOAL_POSITION_L, int((*(refs[i]))*rad_to_enc)+512);
+    comm_status = dxl_get_result();
+    // Writing a value also has a reading after to know if the writting went ok, so checking
+    // that value is suficient
+    if(comm_status != COMM_RXSUCCESS)
     {
-      // Read present position
-      act_buff = (dxl_read_word(motor_ids[i], P_PRESENT_POSITION_L) - 512) * enc_to_rad;
-
-      // Write goal position
-      dxl_write_word(motor_ids[i], P_GOAL_POSITION_L, int((*(refs[i]))*rad_to_enc)+512);
-
-      comm_status = dxl_get_result();
-      if(comm_status == COMM_RXSUCCESS)
-      {
-//        if(act_buff == 0 && fabs(*(acts[i])) > 0.01)
-//        {
-//           ROS_ERROR("ZERO WTF");
-//           break;
-//        }
-        // result is median of last N elements (if have enough elements)
-        if(feedback_buff[i].size() == feedback_buff[i].capacity())
-        {
-          feedback_buff[i].push_back(act_buff);
-          std::nth_element(feedback_buff[i].begin(),
-                           feedback_buff[i].begin() + feedback_buff[i].size()/2,
-                           feedback_buff[i].end());
-          *(acts[i]) = feedback_buff[i][feedback_buff[i].size() / 2];
-        }
-        else
-        {
-          *(acts[i]) = act_buff;
-        }
-      }
-      else
-      {
-        ROS_ERROR_STREAM_THROTTLE(1.0,
-                                  "DynamixelDevice comm error, motor ID: "
-                                  << motor_ids[i]);
-        printCommStatus(comm_status);
-        break;
-      }
+      //ROS_ERROR_STREAM_THROTTLE(1.0,
+      ROS_WARN_STREAM("DynamixelDevice comm error on update of control loop (writing position), motor ID: "
+                       << motor_ids[i]);
+      printCommStatus(comm_status);
     }
+  }
 }
 
 void DynamixelDevice::enableTorque(bool enable)
@@ -133,22 +123,25 @@ void DynamixelDevice::enableTorque(bool enable)
   }
 }
 
-void DynamixelDevice::setComplianceSlope(int motor_id, int value)
+bool DynamixelDevice::setComplianceSlope(int motor_id, int value)
 {
   if(std::find(motor_ids.begin(), motor_ids.end(), motor_id) == motor_ids.end())
   {
     ROS_ERROR_STREAM("Will not set compliance slope for motor with id "
                      << motor_id <<  " since it is not registered");
-    return;
+    return false;
   }
 
   dxl_write_byte(motor_id, DXL_CW_COMPLIANCE_SLOPE, value);
   dxl_write_byte(motor_id, DXL_CCW_COMPLIANCE_SLOPE, value);
   comm_status = dxl_get_result();
-  if(comm_status == COMM_RXSUCCESS)
+  if(comm_status != COMM_RXSUCCESS)
   {
     ROS_ERROR("Failed to set motor compliance slopes!");
+    printCommStatus(comm_status);
+    return false;
   }
+  return true;
 }
 
 int DynamixelDevice::getComplianceSlope(int motor_id)
@@ -177,34 +170,34 @@ double DynamixelDevice::getTorqueLimit(int motor_id)
     return -1;
   }
 
-  int torque_limit_l = dxl_read_byte(motor_id, DXL_TORQUE_LIMIT_L);
-  ROS_ERROR_STREAM("Torque limit L on motor " << motor_id << " is: " << torque_limit_l);
-  int torque_limit_h = dxl_read_byte(motor_id, DXL_TORQUE_LIMIT_H);
-  torque_limit_h = torque_limit_h << 8;
-  ROS_ERROR_STREAM("Torque limit H on motor " << motor_id << " is: " << torque_limit_h);
-  int total_torque_limit = torque_limit_l + torque_limit_h;
+  int torque_limit_l = dxl_read_word(motor_id, DXL_TORQUE_LIMIT_L);
+  ROS_DEBUG_STREAM("Torque limit on motor " << motor_id << " is: " << torque_limit_l << "/" << 0x3FF);
   // In range 0.0 - 1.0
-  double normalized_torque = (double) total_torque_limit / 0x3FF;
-  ROS_ERROR_STREAM("Torque limit in 0.0-1.0 range on motor " << motor_id << " is: " << normalized_torque);
+  double normalized_torque = (double) torque_limit_l / (double) 0x3FF;
+  ROS_DEBUG_STREAM("Torque limit in 0.0-1.0 range on motor " << motor_id << " is: " << normalized_torque);
   return normalized_torque;
 }
 
-void DynamixelDevice::setTorqueLimit(int motor_id, double limit)
+bool DynamixelDevice::setTorqueLimit(int motor_id, double limit)
 {
   if(std::find(motor_ids.begin(), motor_ids.end(), motor_id) == motor_ids.end())
   {
     ROS_ERROR_STREAM("Cannot set torque limit for motor with id "
                      << motor_id <<  " since it is not registered");
-    return;
+    return false;
   }
-  ROS_ERROR_STREAM("Setting torque limit on motor " << motor_id << ": " << limit);
-  int dxl_scale_limit = (int) (limit * 0x3FF);
-  int dxl_scale_limit_l = dxl_scale_limit & 0x00FF;;
-  int dxl_scale_limit_h = dxl_scale_limit >> 8;
-  ROS_ERROR_STREAM("Setting DXL_TORQUE_LIMIT_L: " << dxl_scale_limit_l << " DXL_TORQUE_LIMIT_H: " << dxl_scale_limit_h << " from dxl_scale_limit: " << dxl_scale_limit);
-
-  dxl_write_byte(motor_id, DXL_TORQUE_LIMIT_L, dxl_scale_limit_l);
-  dxl_write_byte(motor_id, DXL_TORQUE_LIMIT_H, dxl_scale_limit_h);
+  ROS_DEBUG_STREAM("Setting torque limit on motor " << motor_id << ": " << limit);
+  int dxl_scale_limit = (int) (limit * (double) 0x3FF);
+  ROS_DEBUG_STREAM("Setting dxl_scale_limit: " << dxl_scale_limit << "/" << 0x3FF);
+  dxl_write_word(motor_id, DXL_TORQUE_LIMIT_L, dxl_scale_limit);
+  comm_status = dxl_get_result();
+  if(comm_status != COMM_RXSUCCESS)
+  {
+    ROS_ERROR("Failed to set torque limit!");
+    printCommStatus(comm_status);
+    return false;
+  }
+  return true;
 }
 
 
@@ -212,33 +205,33 @@ void printCommStatus(int CommStatus)
 {
   switch(CommStatus)
   {
-  case COMM_TXFAIL:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_TXFAIL: Failed transmit instruction packet!");
-    break;
+    case COMM_TXFAIL:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"COMM_TXFAIL: Failed transmit instruction packet!");
+      break;
 
-  case COMM_TXERROR:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_TXERROR: Incorrect instruction packet!");
-    break;
+    case COMM_TXERROR:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"COMM_TXERROR: Incorrect instruction packet!");
+      break;
 
-  case COMM_RXFAIL:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXFAIL: Failed get status packet from device!");
-    break;
+    case COMM_RXFAIL:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"COMM_RXFAIL: Failed get status packet from device!");
+      break;
 
-  case COMM_RXWAITING:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXWAITING: Now recieving status packet!");
-    break;
+    case COMM_RXWAITING:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"COMM_RXWAITING: Now recieving status packet!");
+      break;
 
-  case COMM_RXTIMEOUT:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXTIMEOUT: There is no status packet!");
-    break;
+    case COMM_RXTIMEOUT:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"COMM_RXTIMEOUT: There is no status packet!");
+      break;
 
-  case COMM_RXCORRUPT:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"COMM_RXCORRUPT: Incorrect status packet!");
-    break;
+    case COMM_RXCORRUPT:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"COMM_RXCORRUPT: Incorrect status packet!");
+      break;
 
-  default:
-    ROS_ERROR_STREAM_THROTTLE(1.0,"This is unknown error code " << CommStatus);
-    break;
+    default:
+      ROS_DEBUG_STREAM_THROTTLE(1.0,"This is unknown error code " << CommStatus);
+      break;
   }
 }
 
@@ -246,23 +239,23 @@ void printCommStatus(int CommStatus)
 void PrintErrorCode()
 {
   if(dxl_get_rxpacket_error(ERRBIT_VOLTAGE) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Input voltage error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Input voltage error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_ANGLE) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Angle limit error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Angle limit error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_OVERHEAT) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Overheat error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Overheat error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_RANGE) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Out of range error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Out of range error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_CHECKSUM) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Checksum error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Checksum error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_OVERLOAD) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Overload error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Overload error!");
 
   if(dxl_get_rxpacket_error(ERRBIT_INSTRUCTION) == 1)
-    ROS_ERROR_STREAM_THROTTLE(1.0,"Instruction code error!");
+    ROS_DEBUG_STREAM_THROTTLE(1.0,"Instruction code error!");
 }

@@ -18,10 +18,10 @@ public:
 
   void enableTorque(bool enable);
 
-  void setComplianceSlope(int motor_id, int value);
+  bool setComplianceSlope(int motor_id, int value);
   int getComplianceSlope(int motor_id);
 
-  void setTorqueLimit(int motor_id, double value);
+  bool setTorqueLimit(int motor_id, double value);
   double getTorqueLimit(int motor_id);
 
 private:
