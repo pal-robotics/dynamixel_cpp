@@ -12,6 +12,10 @@
 #define P_TORQUE_ENABLE		24
 #define DXL_CW_COMPLIANCE_SLOPE 28
 #define DXL_CCW_COMPLIANCE_SLOPE 29
+#define DXL_MAX_TORQUE_L 14
+#define DXL_MAX_TORQUE_H 15
+#define DXL_TORQUE_LIMIT_L 34
+#define DXL_TORQUE_LIMIT_H 35
 
 // User setting
 #define BAUD_NUM                1      // 1: 1Mbps 34:57142bps
@@ -163,6 +167,46 @@ int DynamixelDevice::getComplianceSlope(int motor_id)
 
   return (slope+slope2)/2;
 }
+
+double DynamixelDevice::getTorqueLimit(int motor_id)
+{
+  if(std::find(motor_ids.begin(), motor_ids.end(), motor_id) == motor_ids.end())
+  {
+    ROS_ERROR_STREAM("Cannot get torque limit for motor with id "
+                     << motor_id <<  " since it is not registered");
+    return -1;
+  }
+
+  int torque_limit_l = dxl_read_byte(motor_id, DXL_TORQUE_LIMIT_L);
+  ROS_ERROR_STREAM("Torque limit L on motor " << motor_id << " is: " << torque_limit_l);
+  int torque_limit_h = dxl_read_byte(motor_id, DXL_TORQUE_LIMIT_H);
+  torque_limit_h = torque_limit_h << 8;
+  ROS_ERROR_STREAM("Torque limit H on motor " << motor_id << " is: " << torque_limit_h);
+  int total_torque_limit = torque_limit_l + torque_limit_h;
+  // In range 0.0 - 1.0
+  double normalized_torque = (double) total_torque_limit / 0x3FF;
+  ROS_ERROR_STREAM("Torque limit in 0.0-1.0 range on motor " << motor_id << " is: " << normalized_torque);
+  return normalized_torque;
+}
+
+void DynamixelDevice::setTorqueLimit(int motor_id, double limit)
+{
+  if(std::find(motor_ids.begin(), motor_ids.end(), motor_id) == motor_ids.end())
+  {
+    ROS_ERROR_STREAM("Cannot set torque limit for motor with id "
+                     << motor_id <<  " since it is not registered");
+    return;
+  }
+  ROS_ERROR_STREAM("Setting torque limit on motor " << motor_id << ": " << limit);
+  int dxl_scale_limit = (int) (limit * 0x3FF);
+  int dxl_scale_limit_l = dxl_scale_limit & 0x00FF;;
+  int dxl_scale_limit_h = dxl_scale_limit >> 8;
+  ROS_ERROR_STREAM("Setting DXL_TORQUE_LIMIT_L: " << dxl_scale_limit_l << " DXL_TORQUE_LIMIT_H: " << dxl_scale_limit_h << " from dxl_scale_limit: " << dxl_scale_limit);
+
+  dxl_write_byte(motor_id, DXL_TORQUE_LIMIT_L, dxl_scale_limit_l);
+  dxl_write_byte(motor_id, DXL_TORQUE_LIMIT_H, dxl_scale_limit_h);
+}
+
 
 void printCommStatus(int CommStatus)
 {

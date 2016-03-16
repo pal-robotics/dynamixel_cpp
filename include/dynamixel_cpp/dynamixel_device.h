@@ -21,6 +21,9 @@ public:
   void setComplianceSlope(int motor_id, int value);
   int getComplianceSlope(int motor_id);
 
+  void setTorqueLimit(int motor_id, double value);
+  double getTorqueLimit(int motor_id);
+
 private:
   bool initialized;
 
