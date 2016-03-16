@@ -2,8 +2,8 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.5 (2016-03-16)
+------------------
 * Merge branch 'add_torque' into 'cobalt-devel'
   Add inverting a motor commands and torque limit setup
   Also be less verbose with errors (that happen all the time).
