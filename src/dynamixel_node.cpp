@@ -59,9 +59,15 @@ void timerTorqueCallback(const ros::TimerEvent&)
     double curr_tl = dxl.getTorqueLimit(motors[i].id_);
     if(std::abs(curr_tl - motors[i].torque_limit_) > 0.005)
     {
-      // It's a bad read, not that it's wrong set usually :/
-      ROS_WARN_STREAM("Torque limit for motor ID" << motors[i].id_ << " should be " << motors[i].torque_limit_ << " but is " << curr_tl);
-      //dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_);
+      // double check...
+      curr_tl = dxl.getTorqueLimit(motors[i].id_);
+      if(std::abs(curr_tl - motors[i].torque_limit_) > 0.005)
+      {
+        // It's a bad read, not that it's wrong set usually :/
+        ROS_WARN_STREAM("Torque limit for motor ID" << motors[i].id_ << " should be " << motors[i].torque_limit_ << " but is " << curr_tl);
+        dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_);
+      }
+
     }
   }
 }
@@ -132,7 +138,7 @@ int main(int argc, char** argv)
 
   // This should not be needed, Bence said it was necessary on Marco... to be tested.
   // ros::Timer compliance_checker = nh.createTimer(ros::Duration(3.0), &timerComplianceCallback);
-  // ros::Timer torque_checker = nh.createTimer(ros::Duration(3.0), &timerTorqueCallback);
+  ros::Timer torque_checker = nh.createTimer(ros::Duration(3.0), &timerTorqueCallback);
 
   while(ros::ok())
   {
