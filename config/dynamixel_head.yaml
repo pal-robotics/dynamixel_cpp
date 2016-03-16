@@ -13,6 +13,13 @@ dynamixel_parameters:
   head_1_motor:
     id: 1
     compliance_slope: 50
+    invert_commands: false
+    # value in between 0.0 and 1.0 to limit the torque of the motor representing
+    # % of max torque
+    torque_limit: 0.5
   head_2_motor:
     id: 3
     compliance_slope: 50
+    # In case the motor is mounted inverted
+    invert_commands: true
+    torque_limit: 0.5
