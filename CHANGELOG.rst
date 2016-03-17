@@ -2,6 +2,11 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Seems that after an overheat we DO need to set the torque again
+* Contributors: Sam Pfeiffer
+
 0.0.5 (2016-03-16)
 ------------------
 * Merge branch 'add_torque' into 'cobalt-devel'
