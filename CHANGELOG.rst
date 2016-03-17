@@ -2,8 +2,8 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.6 (2016-03-17)
+------------------
 * Seems that after an overheat we DO need to set the torque again
 * Contributors: Sam Pfeiffer
 
