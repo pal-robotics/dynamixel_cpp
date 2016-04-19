@@ -121,18 +121,36 @@ int main(int argc, char** argv)
   dxl.init();
   ROS_INFO("Dynamixel initialized");
 
+  int retries = 0;
   for(size_t i=0; i<motors.size(); ++i)
   {
-    while(! dxl.setComplianceSlope(motors[i].id_, motors[i].compliance_slope_))
+    retries = 0;
+    while(! dxl.setComplianceSlope(motors[i].id_, motors[i].compliance_slope_) && retries < 10)
     {
       ROS_ERROR_STREAM("Retrying setting compliance slope to motor id: " << motors[i].id_ << " to " << motors[i].compliance_slope_);
+      ros::Duration(0.5).sleep();
+      retries++;
+    }
+    if (retries >= 10)
+    {
+      ROS_ERROR_STREAM("Could not set compliance slope to motor id: "  << motors[i].id_ << ", aborting.");
+      return -1;
     }
   }
+
   for(size_t i=0; i<motors.size(); ++i)
   {
-    while(! dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_))
+    retries = 0;
+    while(! dxl.setTorqueLimit(motors[i].id_, motors[i].torque_limit_) && retries < 10 )
     {
      ROS_ERROR_STREAM("Retrying setting torque limit to motor id: " << motors[i].id_ << " to " << motors[i].torque_limit_);
+     ros::Duration(0.5).sleep();
+     retries++;
+    }
+    if (retries >= 10)
+    {
+      ROS_ERROR_STREAM("Could not set torque limit to motor id: "  << motors[i].id_ << ", aborting.");
+      return -1;
     }
   }
 
