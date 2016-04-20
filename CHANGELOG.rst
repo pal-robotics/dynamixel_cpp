@@ -2,6 +2,11 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Workaround for spamming in the initialization if dynamixels are not found
+* Contributors: Sam Pfeiffer, Victor Lopez
+
 0.0.6 (2016-03-17)
 ------------------
 * Seems that after an overheat we DO need to set the torque again
