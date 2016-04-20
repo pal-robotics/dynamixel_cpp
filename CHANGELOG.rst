@@ -2,8 +2,8 @@
 Changelog for package dynamixel_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.7 (2016-04-20)
+------------------
 * Workaround for spamming in the initialization if dynamixels are not found
 * Contributors: Sam Pfeiffer, Victor Lopez
 

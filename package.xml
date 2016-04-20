@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>dynamixel_cpp</name>
-  <version>0.0.6</version>
+  <version>0.0.7</version>
   <description>The dynamixel_cpp package</description>
   <maintainer email="bence.magyar@pal-robotics.com">Bence Magyar</maintainer>
   <author email="bence.magyar@pal-robotics.com">Bence Magyar</author>
